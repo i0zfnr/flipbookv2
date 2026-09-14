@@ -10,27 +10,25 @@ if (!file_exists(__DIR__ . '/../.env') && file_exists(__DIR__ . '/../../.env')) 
     @copy(__DIR__ . '/../../.env', __DIR__ . '/../.env');
 }
 
+// Delete stale .port file to prevent nginx proxy loop
+@unlink(__DIR__ . '/../.port');
+
 // If vendor/autoload.php is not installed on cloud hosting, run standalone engine
 if (!file_exists(__DIR__.'/../vendor/autoload.php')) {
     require_once __DIR__.'/standalone_api.php';
     exit;
 }
 
-try {
-    // Determine if the application is in maintenance mode...
-    if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php')) {
-        require $maintenance;
-    }
-
-    // Register the Composer autoloader...
-    require __DIR__.'/../vendor/autoload.php';
-
-    // Bootstrap Laravel and handle the request...
-    /** @var Application $app */
-    $app = require_once __DIR__.'/../bootstrap/app.php';
-
-    $app->handleRequest(Request::capture());
-} catch (\Throwable $e) {
-    // Fallback to standalone zero-dependency API engine
-    require_once __DIR__.'/standalone_api.php';
+// Determine if the application is in maintenance mode...
+if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php')) {
+    require $maintenance;
 }
+
+// Register the Composer autoloader...
+require __DIR__.'/../vendor/autoload.php';
+
+// Bootstrap Laravel and handle the request...
+/** @var Application $app */
+$app = require_once __DIR__.'/../bootstrap/app.php';
+
+$app->handleRequest(Request::capture());

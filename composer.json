@@ -53,6 +53,12 @@
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
         ],
+        "post-install-cmd": [
+            "@php -r \"@unlink('.port');\"",
+            "@php artisan config:clear --ansi --no-interaction",
+            "@php artisan view:clear --ansi --no-interaction",
+            "@php artisan cache:clear --ansi --no-interaction"
+        ],
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
         ],
