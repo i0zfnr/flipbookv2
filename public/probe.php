@@ -1,40 +1,24 @@
 ﻿<?php
 $data = [];
 
-$data['php_version'] = phpversion();
-$data['sapi'] = php_sapi_name();
-$data['cwd'] = getcwd();
-$data['script_filename'] = $_SERVER['SCRIPT_FILENAME'] ?? null;
-$data['document_root'] = $_SERVER['DOCUMENT_ROOT'] ?? null;
-
-// Check 127.0.0.1:9000
-$fp = @fsockopen('127.0.0.1', 9000, $errno, $errstr, 2);
-if ($fp) {
-    $data['port_9000'] = 'OPEN';
-    fclose($fp);
-} else {
-    $data['port_9000'] = "CLOSED ($errno: $errstr)";
+function get_http($port, $path = '/') {
+    $ch = curl_init("http://127.0.0.1:$port$path");
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 3);
+    curl_setopt($ch, CURLOPT_HEADER, true);
+    $res = curl_exec($ch);
+    $info = curl_getinfo($ch);
+    $err = curl_error($ch);
+    curl_close($ch);
+    return [
+        'http_code' => $info['http_code'],
+        'error' => $err,
+        'response' => substr($res, 0, 500)
+    ];
 }
 
-// Check ports 8000, 8080, 8001
-foreach ([8000, 8001, 8080, 3000, 3306] as $port) {
-    $p = @fsockopen('127.0.0.1', $port, $errno, $errstr, 1);
-    if ($p) {
-        $data["port_$port"] = 'OPEN';
-        fclose($p);
-    } else {
-        $data["port_$port"] = "CLOSED ($errno: $errstr)";
-    }
-}
-
-// Check if socket files exist
-$sock_patterns = ['/tmp/*.sock', '/var/run/*.sock', '/run/*.sock', '/var/run/php*/*.sock'];
-$data['sockets'] = [];
-foreach ($sock_patterns as $pat) {
-    $data['sockets'][$pat] = glob($pat) ?: [];
-}
-
-// Check parent directories
-$data['parent_dir'] = @scandir('/www/sites/hosting_clients') ?: [];
+$data['http_8000'] = get_http(8000);
+$data['http_8001'] = get_http(8001);
+$data['http_9000'] = get_http(9000);
 
 echo json_encode($data, JSON_PRETTY_PRINT);
